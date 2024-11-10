@@ -23,7 +23,7 @@ window.title('Login of Student Management System')
 
 window.resizable(False,False)
 
-backgroundImage = ImageTk.PhotoImage(file='bg.jpg')
+backgroundImage = ImageTk.PhotoImage(file='bg2.jpg')
 
 bgLabel = Label(window, image=backgroundImage)
 bgLabel.place(x=0, y=0)
