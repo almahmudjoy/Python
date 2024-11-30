@@ -9,7 +9,7 @@ import pandas as pd
 
 # FUNCTIONALITY PART
 def toplevel_data(title, button_text, command):
-    global idEntry, nameEntry, phoneEntry, emailEntry, addressEntry, genderEntry, dobEntry, screen
+    global idEntry, nameEntry, phoneEntry, emailEntry, addressEntry, gender_combobox, CGPAEntry, dobEntry, screen
     screen = Toplevel()
     screen.title(title)
     screen.grab_set()
@@ -39,23 +39,33 @@ def toplevel_data(title, button_text, command):
     addressEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
     addressEntry.grid(row=4, column=1, pady=15, padx=10)
 
-    genderLabel = Label(screen, text='Gender', font=('times new roman', 20, 'bold'))
+    '''genderLabel = Label(screen, text='Gender', font=('times new roman', 20, 'bold'))
     genderLabel.grid(row=5, column=0, padx=30, pady=15, sticky=W)
     genderEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
-    genderEntry.grid(row=5, column=1, pady=15, padx=10)
+    genderEntry.grid(row=5, column=1, pady=15, padx=10)'''
+
+    gender_label = Label(screen, text="Gender", font=('times new roman', 20, 'bold'))
+    gender_label.grid(row=5, column=0, padx=30, pady=15, sticky=W)
+    gender_options = ['Male', 'Female']
+    gender_combobox = ttk.Combobox(screen, values=gender_options, font=('roman', 15, 'bold'), width=24)
+    gender_combobox.grid(row=5, column=1, pady=15, padx=10)
+
+    CGPALabel = Label(screen, text='CGPA', font=('times new roman', 20, 'bold'))
+    CGPALabel.grid(row=6, column=0, padx=30, pady=15, sticky=W)
+    CGPAEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
+    CGPAEntry.grid(row=6, column=1, pady=15, padx=10)
 
     dobLabel = Label(screen, text='D.O.B', font=('times new roman', 20, 'bold'))
-    dobLabel.grid(row=6, column=0, padx=30, pady=15, sticky=W)
+    dobLabel.grid(row=7, column=0, padx=30, pady=15, sticky=W)
     dobEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
-    dobEntry.grid(row=6, column=1, pady=15, padx=10)
+    dobEntry.grid(row=7, column=1, pady=15, padx=10)
 
     student_button = ttk.Button(screen, text=button_text, command=command)
-    student_button.grid(row=7, columnspan=2, pady=15)
+    student_button.grid(row=8, columnspan=2, pady=15)
 
 
     if title=='Update Student':
         indexing = studentTable.focus()
-
         content = studentTable.item(indexing)
         listdata = content['values']
         idEntry.insert(0, listdata[0])
@@ -63,8 +73,9 @@ def toplevel_data(title, button_text, command):
         phoneEntry.insert(0, listdata[2])
         emailEntry.insert(0, listdata[3])
         addressEntry.insert(0, listdata[4])
-        genderEntry.insert(0, listdata[5])
-        dobEntry.insert(0, listdata[6])
+        gender_combobox.insert(0, listdata[5])
+        CGPAEntry.insert(0, listdata[6])
+        dobEntry.insert(0, listdata[7])
 
 def iexit():
     result=messagebox.askyesno('Confirm', 'Do you want to exit?')
@@ -72,6 +83,7 @@ def iexit():
         root.destroy()
     else:
         pass
+
 
 def export_data():
     url = filedialog.asksaveasfilename(defaultextension='.csv')
@@ -83,12 +95,22 @@ def export_data():
         datalist = content['values']
         newlist.append(datalist)
 
-    table = pd.DataFrame(newlist, columns=['Id', 'Name', 'Mobile', 'Email', 'Address', 'Gender', 'DOB', 'Added Time', 'Added Date'])
+    table = pd.DataFrame(newlist, columns=['Id', 'Name', 'Mobile', 'Email', 'Address', 'Gender', 'CGPA', 'DOB', 'Added Time', 'Added Date'])
     table.to_csv(url, index=False)
     messagebox.showinfo('Success', 'Data is saved successfully')
+
+
 def update_data():
     currentdate = time.strftime('%d/%m/%Y')
     currenttime = time.strftime('%I:%M:%S %p')
+
+    # Ensure phone number is treated as a string, preserving leading zeros
+    phone_number = phoneEntry.get().strip()  # Remove any extra spaces if present
+    phone_number = str(phone_number).zfill(11)  # Ensure the number is exactly 11 digits, including leading zero
+
+    if len(phone_number) != 11:
+        messagebox.showerror('Error', 'Phone number must be exactly 11 digits.', parent=screen)
+        return
 
     # Correct order: name, mobile, email, address, gender, dob, date, time, id
     query = '''
@@ -97,19 +119,22 @@ def update_data():
             mobile = %s,
             email = %s,
             address = %s,
-            gender = %s,
+            gender = %s, 
+            CGPA = %s,
             dob = %s,
             date = %s,
             time = %s
-        WHERE id = %s
-    '''
+        WHERE id = %s'''
+
     # Ensure the parameters are in the correct order
     parameters = (
         nameEntry.get(),
-        phoneEntry.get(),
+        #phoneEntry.get(),
+        phone_number,
         emailEntry.get(),
         addressEntry.get(),
-        genderEntry.get(),
+        gender_combobox.get(),
+        CGPAEntry.get(),
         dobEntry.get(),
         currentdate,
         currenttime,
@@ -125,7 +150,6 @@ def update_data():
     except mysql.connector.Error as err:
         messagebox.showerror('Error', f'Failed to update data: {err}', parent=screen)
 
-
 def show_student():
     query = 'SELECT * FROM student'
     mycursor.execute(query)
@@ -134,7 +158,13 @@ def show_student():
     for data in fetched_data:
         studentTable.insert('', END, values=data)
 
-
+'''def show_student():
+    mycursor.execute("SELECT * FROM student")
+    fetched_data = mycursor.fetchall()
+    studentTable.delete(*studentTable.get_children())  # Clear existing table rows
+    for row in fetched_data:
+        studentTable.insert('', 'end', values=row)  # Insert updated rows into the table
+'''
 
 def delete_student():
     indexing = studentTable.focus()
@@ -167,14 +197,14 @@ def delete_student():
         studentTable.insert('', END, values=data)
 
 
-
 def search_data():
-    query='select * from student where id=%s or name=%s or email=%s or mobile=%s or address=%s or gender=%s or dob=%s'
-    mycursor.execute(query,(idEntry.get(), nameEntry.get(), emailEntry.get(), phoneEntry.get(), addressEntry.get(), genderEntry.get(), dobEntry.get()))
+    query='select * from student where id=%s or name=%s or email=%s or mobile=%s or address=%s or gender=%s or CGPA=%s or dob=%s'
+    mycursor.execute(query,(idEntry.get(), nameEntry.get(), emailEntry.get(), phoneEntry.get(), addressEntry.get(), gender_combobox.get(), CGPAEntry.get(), dobEntry.get()))
     studentTable.delete(*studentTable.get_children())
     fetched_data=mycursor.fetchall()
     for data in fetched_data:
         studentTable.insert('',END,values=data)
+
 
 
 def add_data():
@@ -184,14 +214,15 @@ def add_data():
     phone = phoneEntry.get()
     email = emailEntry.get()
     address = addressEntry.get()
-    gender = genderEntry.get()
+    gender = gender_combobox.get()
+    CGPA = CGPAEntry.get()
     dob = dobEntry.get()
 
-    # Validation checks
+    # Validation for student_id
     if not (student_id.isdigit() and len(student_id) == 3):
         messagebox.showerror('Error', 'ID must be exactly 3 digits.', parent=screen)
         return
-    if not name.isalpha():
+    if not re.match(r"^[A-Za-z\s\-]+$", name):
         messagebox.showerror('Error', 'Name should only contain alphabetic characters.', parent=screen)
         return
     if not (phone.isdigit() and len(phone) == 11):
@@ -208,7 +239,7 @@ def add_data():
         return
 
     # Additional check to ensure no fields are empty
-    if student_id == '' or name == '' or phone == '' or email == '' or address == '' or gender == '' or dob == '':
+    if student_id == '' or name == '' or phone == '' or email == '' or address == '' or gender == '' or CGPA == '' or dob == '':
         messagebox.showerror('Error', 'All fields are required', parent=screen)
         return
 
@@ -222,28 +253,37 @@ def add_data():
     # Insert data if all validations pass
     currentdate = time.strftime('%d/%m/%Y')
     currenttime = time.strftime('%I:%M:%S %p')
-    query = 'INSERT INTO student VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
+    query = 'INSERT INTO student VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
     try:
-        mycursor.execute(query, (student_id, name, phone, email, address, gender, dob, currentdate, currenttime))
+        mycursor.execute(query, (student_id, name, phone, email, address, gender, CGPA, dob, currentdate, currenttime))
         con.commit()
         result = messagebox.askyesno('Confirm', 'Data added successfully. Do you want to clean the form?',
                                      parent=screen)
+
+        # Refresh the student table immediately after inserting new data
+        show_student()
+
+        # Ask user if they want to clear the form
+        result = messagebox.askyesno('Confirm', 'Do you want to clean the form?', parent=screen)
+
         if result:
             idEntry.delete(0, END)
             nameEntry.delete(0, END)
             phoneEntry.delete(0, END)
             emailEntry.delete(0, END)
             addressEntry.delete(0, END)
-            genderEntry.delete(0, END)
+            gender_combobox.set('')
+            CGPAEntry.delete(0, END)
             dobEntry.delete(0, END)
+
     except mysql.connector.IntegrityError as e:
         messagebox.showerror('Error', f'Failed to add data: {e}', parent=screen)
-        query = 'select *from student'
+        '''query = 'select *from student'
         mycursor.execute(query)
         fetched_data = mycursor.fetchall()
         studentTable.delete(*studentTable.get_children())
         for data in fetched_data:
-            studentTable.insert('', END, values=data)
+            studentTable.insert('', END, values=data)'''
 
 def connect_database():
     def connect():
@@ -279,6 +319,7 @@ def connect_database():
                          'email VARCHAR(30), '
                          'address VARCHAR(100), '
                          'gender VARCHAR(20), '
+                         'CGPA VARCHAR(20), '
                          'dob VARCHAR(50), ' 
                          'date VARCHAR(50), '
                          'time VARCHAR(50))')
@@ -346,11 +387,11 @@ def slider():
     sliderLabel.after(300, slider)
 
 def clock():
-    date = time.strftime('%d/%m/%Y')  # Date with full year format
-    currenttime = time.strftime('%I:%M:%S %p')  # 12-hour format with AM/PM
-    datetimeLabel.config(text=f"DATE:{date}\n    TIME:{currenttime}")
-    # Call the clock function again after 1000 milliseconds (1 second)
+    date = time.strftime('%d/%m/%Y')  # Current date
+    currenttime = time.strftime('%I:%M:%S %p')  # Current time
+    datetimeLabel.config(text=f'Date: {date}\nTime: {currenttime}')
     datetimeLabel.after(1000, clock)
+
 
 # GUI PART
 root = ttkthemes.ThemedTk()
@@ -413,7 +454,7 @@ rightFrame.place(x=350, y=80, width=1000, height=600)
 scrollBarX = Scrollbar(rightFrame, orient=HORIZONTAL)
 scrollBarY = Scrollbar(rightFrame, orient=VERTICAL)
 
-studentTable=ttk.Treeview(rightFrame,columns=('Id','Name','Mobile','Email', 'Address', 'Gender', 'D.O.B', 'Added Date', 'Added Time'),
+studentTable=ttk.Treeview(rightFrame,columns=('Id','Name','Mobile','Email', 'Address', 'Gender','CGPA', 'D.O.B', 'Added Date', 'Added Time'),
                           xscrollcommand=scrollBarX.set, yscrollcommand=scrollBarY.set)
 
 scrollBarX.config(command=studentTable.xview)
@@ -430,6 +471,7 @@ studentTable.heading('Mobile', text='Mobile')
 studentTable.heading('Email', text='Email Address')
 studentTable.heading('Address', text='Address')
 studentTable.heading('Gender', text='Gender')
+studentTable.heading('CGPA', text='CGPA')
 studentTable.heading('D.O.B', text='D.O.B')
 studentTable.heading('Added Date', text='Added Date')
 studentTable.heading('Added Time', text='Added Time')
@@ -441,6 +483,7 @@ studentTable.column('Email', width=300, anchor=CENTER)
 studentTable.column('Mobile', width=200, anchor=CENTER)
 studentTable.column('Address', width=300, anchor=CENTER)
 studentTable.column('Gender', width=100, anchor=CENTER)
+studentTable.column('CGPA', width=100, anchor=CENTER)
 studentTable.column('D.O.B', width=100, anchor=CENTER)
 studentTable.column('Added Date', width=200, anchor=CENTER)
 studentTable.column('Added Time', width=200, anchor=CENTER)
