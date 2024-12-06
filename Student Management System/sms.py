@@ -6,10 +6,30 @@ import mysql.connector
 import re
 import pandas as pd
 
+'''
+def toggle_cgpa_fields():
+    """Toggle CGPA fields between single and range input."""
+    if toggle_var.get() == "Search":
+        # Hide single CGPA input and show minCGPA/maxCGPA inputs
+        CGPAEntry.grid_forget()
+        minCGPALabel.grid(row=6, column=0, padx=30, pady=15, sticky=W)
+        minCGPAEntry.grid(row=6, column=1, pady=15, padx=10)
+        maxCGPALabel.grid(row=7, column=0, padx=30, pady=15, sticky=W)
+        maxCGPAEntry.grid(row=7, column=1, pady=15, padx=10)
+    else:
+        # Hide minCGPA/maxCGPA inputs and show single CGPA input
+        minCGPALabel.grid_forget()
+        minCGPAEntry.grid_forget()
+        maxCGPALabel.grid_forget()
+        maxCGPAEntry.grid_forget()
+        CGPALabel.grid(row=6, column=0, padx=30, pady=15, sticky=W)
+        CGPAEntry.grid(row=6, column=1, pady=15, padx=10)'''
 
 # FUNCTIONALITY PART
 def toplevel_data(title, button_text, command):
     global idEntry, nameEntry, phoneEntry, emailEntry, addressEntry, gender_combobox, CGPAEntry, dobEntry, screen
+    #global minCGPAEntry, maxCGPAEntry, minCGPALabel, maxCGPALabel, CGPALabel, toggle_var
+
     screen = Toplevel()
     screen.title(title)
     screen.grab_set()
@@ -54,6 +74,51 @@ def toplevel_data(title, button_text, command):
     CGPALabel.grid(row=6, column=0, padx=30, pady=15, sticky=W)
     CGPAEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
     CGPAEntry.grid(row=6, column=1, pady=15, padx=10)
+
+    ''' # CGPA Fields
+    CGPALabel = Label(screen, text='CGPA', font=('times new roman', 20, 'bold'))
+    CGPAEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
+
+    # Min and Max CGPA Fields (hidden initially)
+    minCGPALabel = Label(screen, text='Min CGPA', font=('times new roman', 20, 'bold'))
+    minCGPAEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
+    maxCGPALabel = Label(screen, text='Max CGPA', font=('times new roman', 20, 'bold'))
+    maxCGPAEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
+
+    dobLabel = Label(screen, text='D.O.B', font=('times new roman', 20, 'bold'))
+    dobLabel.grid(row=8, column=0, padx=30, pady=15, sticky=W)
+    dobEntry = Entry(screen, font=('roman', 15, 'bold'), width=24)
+    dobEntry.grid(row=8, column=1, pady=15, padx=10)
+
+    # Initial Layout for CGPA field
+    CGPALabel.grid(row=6, column=0, padx=30, pady=15, sticky=W)
+    CGPAEntry.grid(row=6, column=1, pady=15, padx=10)
+
+    # Toggle button to switch between "Add" and "Search" modes
+    toggle_button = ttk.Button(
+        screen,
+        textvariable=toggle_var,
+        command=lambda: toggle_var.set("Search" if toggle_var.get() == "Add" else "Add") or toggle_cgpa_fields()
+    )
+    toggle_button.grid(row=9, column=0, columnspan=2, pady=15)
+
+    student_button = ttk.Button(screen, text=button_text, command=command)
+    student_button.grid(row=10, columnspan=2, pady=15)
+
+    # You can remove the command_function from here if you want to handle the logic elsewhere.
+    def command_function():
+        if toggle_var.get() == "Search":
+            print(f"Searching for students with CGPA between {minCGPAEntry.get()} and {maxCGPAEntry.get()}")
+        else:
+            print(f"Adding student with CGPA: {CGPAEntry.get()}")
+
+    # Avoid recursive calls; only call toplevel_data once
+    # Example of how to call toplevel_data
+    if title != 'Update Student':
+        screen.mainloop()
+
+# Call the function with a title and button text
+toplevel_data("Student Form", "Submit", lambda: print("Submitted"))'''
 
     dobLabel = Label(screen, text='D.O.B', font=('times new roman', 20, 'bold'))
     dobLabel.grid(row=7, column=0, padx=30, pady=15, sticky=W)
@@ -197,13 +262,115 @@ def delete_student():
         studentTable.insert('', END, values=data)
 
 
-def search_data():
+'''def search_data():
     query='select * from student where id=%s or name=%s or email=%s or mobile=%s or address=%s or gender=%s or CGPA=%s or dob=%s'
     mycursor.execute(query,(idEntry.get(), nameEntry.get(), emailEntry.get(), phoneEntry.get(), addressEntry.get(), gender_combobox.get(), CGPAEntry.get(), dobEntry.get()))
     studentTable.delete(*studentTable.get_children())
     fetched_data=mycursor.fetchall()
     for data in fetched_data:
-        studentTable.insert('',END,values=data)
+        studentTable.insert('',END,values=data)'''
+
+
+'''def search_data():
+    # Retrieve user input
+    student_id = idEntry.get()
+    name = nameEntry.get()
+    email = emailEntry.get()
+    phone = phoneEntry.get()
+    address = addressEntry.get()
+    gender = gender_combobox.get()
+    CGPA = CGPAEntry.get()
+    dob = dobEntry.get()
+
+    # Check if CGPA is a valid float
+    if CGPA and not CGPA.replace('.', '', 1).isdigit():
+        messagebox.showerror('Error', 'CGPA must be a valid number', parent=screen)
+        return
+    else:
+        CGPA = float(CGPA) if CGPA else None  # Convert CGPA to float if valid
+
+    # Adjust the query to handle the CGPA field as a float with a tolerance for comparison
+    query = 
+    SELECT * FROM student
+    WHERE id=%s OR name=%s OR email=%s OR mobile=%s OR address=%s OR gender=%s OR
+    (%s IS NULL OR ROUND(CGPA, 2)=%s) OR dob=%s
+    
+
+    # Execute the query, using 'None' for CGPA if not provided
+    mycursor.execute(query, (student_id, name, email, phone, address, gender, CGPA, CGPA, dob))
+    studentTable.delete(*studentTable.get_children())
+    fetched_data = mycursor.fetchall()
+
+    # Check if the query returned data and insert it into the table
+    for data in fetched_data:
+        studentTable.insert('', END, values=data)'''
+
+
+def search_data():
+    # Retrieve user inputs
+    student_id = idEntry.get().strip()
+    name = nameEntry.get().strip()
+    email = emailEntry.get().strip()
+    phone = phoneEntry.get().strip()
+    address = addressEntry.get().strip()
+    gender = gender_combobox.get().strip()
+    CGPA = CGPAEntry.get().strip()
+    dob = dobEntry.get().strip()
+
+    # Validate CGPA if provided
+    if CGPA:
+        try:
+            CGPA = float(CGPA)  # Convert to float
+        except ValueError:
+            messagebox.showerror('Error', 'CGPA must be a valid number', parent=screen)
+            return
+    else:
+        CGPA = None  # Set to None if not provided
+
+    # Base query and dynamic conditions
+    query = 'SELECT * FROM student WHERE 1=1'  # "1=1" allows appending conditions dynamically
+    params = []  # To store query parameters dynamically
+
+    # Append conditions for each field
+    if student_id:
+        query += ' AND id = %s'
+        params.append(student_id)
+    if name:
+        query += ' AND name = %s'
+        params.append(name)
+    if email:
+        query += ' AND email = %s'
+        params.append(email)
+    if phone:
+        query += ' AND mobile = %s'
+        params.append(phone)
+    if address:
+        query += ' AND address = %s'
+        params.append(address)
+    if gender:
+        query += ' AND gender = %s'
+        params.append(gender)
+    if CGPA is not None:
+        query += ' AND ROUND(CGPA, 2) = ROUND(%s, 2)'
+        params.append(CGPA)
+    if dob:
+        query += ' AND dob = %s'
+        params.append(dob)
+
+    # Execute the query
+    mycursor.execute(query, tuple(params))
+
+    # Clear the current table entries
+    studentTable.delete(*studentTable.get_children())
+
+    # Fetch and display the results
+    fetched_data = mycursor.fetchall()
+    if fetched_data:
+        for data in fetched_data:
+            studentTable.insert('', END, values=data)
+    else:
+        messagebox.showinfo('Info', 'No matching records found.', parent=screen)
+
 
 
 
